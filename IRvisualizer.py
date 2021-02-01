@@ -17,7 +17,7 @@ import sys
 def legacy_import_data(filename):
     """
     Read a csv, skipping the first 19 rows (metadata) and the last 40 rows (extended metadata)
-    USE DISCOURAGED DUE TO HARDCODED METADATA CUTTING
+    FOR REFERENCE ONLY. USE DISCOURAGED DUE TO HARDCODED METADATA SLICING.
     """
     xydata = pd.read_csv(filename, engine="python", names=["X", "Y"], skiprows=19, skipfooter=40)
     return xydata
@@ -28,9 +28,9 @@ def import_irdata_from_csv(filename):
     Read csv and identify start and end of dataset by "XYDATA" and "##### Extended Information" keywords
     """
     xydata = pd.read_csv(filename, names=["X", "Y"])
-    data_start = xydata.index[xydata["X"] == "XYDATA"].tolist()
-    data_end = xydata.index[xydata["X"] == "##### Extended Information"].tolist()
-    xydata = xydata.iloc[data_start[0] + 1: data_end[0], :]
+    data_start = xydata.index[xydata["X"] == "XYDATA"].item()
+    data_end = xydata.index[xydata["X"] == "##### Extended Information"].item()
+    xydata = xydata.iloc[data_start + 1: data_end, :]
     xydata.reset_index(inplace=True, drop=True)
     xydata = xydata.astype("float64")
     return xydata
@@ -48,15 +48,17 @@ def plot_spectrum(df, filename, xlim_start, xlim_end, ylim_start, ylim_end):
     """
     Plot an IR spectrum from a pandas.DataFrame with "X" and "Y" columns
     """
-    fig, axs = plt.subplots(1, 1)
-    axs.plot(df["X"], df["Y"])
+    fig, axs = plt.subplots(1, 1)  # initialize a canvas with one figure which has one axis
+    axs.plot(df["X"], df["Y"])  # plot the data
+    # cut the plot according to user input
     axs.set_xlim(xlim_start, xlim_end)
     axs.set_ylim(ylim_start, ylim_end)
-    axs.set_xlabel('wavenumber [$\mathregular{cm^{-1}]}$')
+    # set informative labels
+    axs.set_xlabel('wavenumber [$\mathregular{cm^{-1}]}$')  # matplotlib can interpret this LateX expression
     axs.set_ylabel('transmission [a.u.]')
-    axs.grid(True)
-    axs.set_title(filename)
-    fig.tight_layout()
+    axs.grid(True)  # show a grid to help guide the viewer's eye
+    axs.set_title(filename)  # set a title from the filename of the input data
+    fig.tight_layout()  # a standard option for matplotlib
     plt.draw()
 
 
@@ -69,7 +71,7 @@ y_end = None    # default y-limit
 j, k = False, False  # auxiliary variable to check if -x or -y was given
 
 if __name__ == '__main__':
-    # check if any argument was given
+    # deal with the arguments passed from command line
     arguments = sys.argv  # create a copy of sys.argv (since arguments will be modified)
     if len(arguments) == 1:
         sys.exit("ERROR: No argument given. Please give at least one csv file with IR data.")
@@ -77,8 +79,8 @@ if __name__ == '__main__':
     # check if -x and -y flags were given
     for i in range(0, len(arguments)):
         if "-x" in arguments[i]:
-            x_start = int(arguments[i+1])
-            x_end = int(arguments[i+2])
+            x_start = int(arguments[i+1])  # the argument after "-x"
+            x_end = int(arguments[i+2])  # the 2nd argument after "-x"
             j = i
         if "-y" in arguments[i]:
             y_start = float(arguments[i+1])
@@ -92,17 +94,18 @@ if __name__ == '__main__':
     elif k:
         del arguments[k:k + 3]
 
-    # print(arguments, "\n")
+    # Print some information to interactive output
     print("Plotting all spectra with x limit {} to {}".format(x_start, x_end))
     print("Plotting all spectra with y limit {} to {}\n".format(y_start, y_end))
-    # import csv to df
+
+    # Process spectra in batch
     importedData = {}
     normalizedData = {}
-    for i in range(0, len(arguments)-1):  # -2 to remove script name argument and not walk past array length
-        # print("i:",i)
-        file = arguments[i+1]        # +1 to omit sys.argv[0] which is script name
+    # iterate all filenames given when this script was called
+    for i in range(1, len(arguments)):  # start at 1 since arguments[0] is just the name of the script
+        file = arguments[i]  # for convenience
         if ".csv" not in file:
-            print("ERROR: Encountered invalid file type for {} (only .csv allowed). Skipping this file.".format(file))
+            print("WARNING: Encountered invalid file type for {} (only .csv allowed). Skipping this file.".format(file))
         elif "_normalized.csv" in file:
             print("Skipping previously processed file {}".format(file))
         else:
@@ -110,7 +113,7 @@ if __name__ == '__main__':
             importedData[file] = import_irdata_from_csv(file)
             # normalize Y values of df
             normalizedData[file] = normalize_y(importedData[file])
-            print("Normalized data for {}. Output:\n {}\n".format(file,normalizedData[file]))
+            print("Normalized data for {}. Output:\n {}\n".format(file, normalizedData[file]))
             # plot the spectra
             plot_spectrum(normalizedData[file], file, x_start, x_end, y_start, y_end)
             print("Plotted spectra for {}.\n".format(file))
