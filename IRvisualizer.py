@@ -48,7 +48,7 @@ def plot_spectrum(df, filename, xlim_start, xlim_end, ylim_start, ylim_end):
     """
     Plot an IR spectrum from a pandas.DataFrame with "X" and "Y" columns
     """
-    fig, axs = plt.subplots(1, 1)  # initialize a canvas with one figure which has one axis
+    fig, axs = plt.subplots(1, 1)  # initialize a figure with one axis (since 1 row, 1 column)
     axs.plot(df["X"], df["Y"])  # plot the data
     # cut the plot according to user input
     axs.set_xlim(xlim_start, xlim_end)
@@ -60,6 +60,7 @@ def plot_spectrum(df, filename, xlim_start, xlim_end, ylim_start, ylim_end):
     axs.set_title(filename)  # set a title from the filename of the input data
     fig.tight_layout()  # a standard option for matplotlib
     plt.draw()
+    return
 
 
 # MAIN
